@@ -1,4 +1,5 @@
-﻿using MagicVilla_API.Data;
+﻿using AutoMapper;
+using MagicVilla_API.Data;
 using MagicVilla_API.Models;
 using MagicVilla_API.Models.DTO;
 using Microsoft.AspNetCore.JsonPatch;
@@ -13,16 +14,19 @@ namespace MagicVilla_API.Controllers
     public class VillaAPIController : ControllerBase
     {
         private readonly ApplicationDBContext _db;
+        private readonly IMapper _mapper;
 
-        public VillaAPIController(ApplicationDBContext db)
+        public VillaAPIController(ApplicationDBContext db, IMapper mapper)
         {
             _db = db;
+            _mapper = mapper;
         }
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<VillaDTO>>> GetVillas()
         {
-            return Ok(await _db.Villas.ToListAsync());
+            IEnumerable<Villa> villaList = await _db.Villas.ToListAsync();
+            return Ok(_mapper.Map<List<VillaDTO>>(villaList));
         }
 
         [HttpGet("{id:int}", Name ="GetVilla")]
@@ -41,7 +45,7 @@ namespace MagicVilla_API.Controllers
             if (villa == null)
                 return NotFound();
 
-            return Ok(villa);
+            return Ok(_mapper.Map<VillaDTO>(villa));
         }
 
         [ProducesResponseType(StatusCodes.Status201Created)]
@@ -60,16 +64,7 @@ namespace MagicVilla_API.Controllers
             if(villa == null)
                 return BadRequest();
 
-            Villa model = new()
-            {
-                Name = villa.Name,
-                Amenity = villa.Amenity,
-                Details = villa.Details,
-                ImageUrl = villa.ImageUrl,
-                Occupancy = villa.Occupancy,
-                Rate = villa.Rate,
-                Sqft = villa.Sqft
-            };
+            Villa model = _mapper.Map<Villa>(villa);
 
             await _db.Villas.AddAsync(model);
             await _db.SaveChangesAsync();
@@ -104,17 +99,7 @@ namespace MagicVilla_API.Controllers
             if(villa == null || id != villa.Id)
                 return BadRequest();
 
-            Villa model = new Villa
-            {
-                Name = villa.Name,
-                Id = villa.Id,
-                Amenity = villa.Amenity,
-                Details = villa.Details,
-                ImageUrl = villa.ImageUrl,
-                Occupancy = villa.Occupancy,
-                Rate = villa.Rate,
-                Sqft = villa.Sqft
-            };
+            Villa model = _mapper.Map<Villa>(villa);
 
             _db.Update(model);
             await _db.SaveChangesAsync();
@@ -134,17 +119,7 @@ namespace MagicVilla_API.Controllers
 
             var villa = await _db.Villas.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
 
-            VillaUpdateDTO villaDTO = new VillaUpdateDTO
-            {
-                Amenity = villa.Amenity,
-                Details = villa.Details,
-                ImageUrl = villa.ImageUrl,
-                Name = villa.Name,
-                Id = villa.Id,
-                Occupancy = villa.Occupancy,
-                Rate = villa.Rate,
-                Sqft = villa.Sqft
-            };
+            VillaUpdateDTO villaDTO = _mapper.Map<VillaUpdateDTO>(villa);
 
             if (villa == null)
             {
@@ -158,17 +133,7 @@ namespace MagicVilla_API.Controllers
                 return BadRequest();
             }
 
-            Villa model = new Villa
-            {
-                Name = villaDTO.Name,
-                Id = villaDTO.Id,
-                Amenity = villaDTO.Amenity,
-                Details = villaDTO.Details,
-                ImageUrl = villaDTO.ImageUrl,
-                Occupancy = villaDTO.Occupancy,
-                Rate = villaDTO.Rate,
-                Sqft = villaDTO.Sqft
-            };
+            Villa model = _mapper.Map<Villa>(villaDTO);
 
             _db.Update(model);
             await _db.SaveChangesAsync();
